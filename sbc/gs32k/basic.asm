@@ -11,6 +11,8 @@
 ; If the above don't work, please perform an Internet search to see if I have
 ; updated the web page hosting service.
 ;
+; Phil_G: Small monitor added, just fits in an 8k rom above basic.  
+;
 ;==================================================================================
 
 ; NASCOM ROM BASIC Ver 4.7, (C) 1978 Microsoft
@@ -37,7 +39,7 @@ DEL     .EQU    7FH             ; Delete
 
 ; BASIC WORK SPACE LOCATIONS
 
-WRKSPC  .EQU    2045H             ; BASIC Work space
+WRKSPC  .EQU    8045H             ; BASIC Work space
 USR     .EQU    WRKSPC+3H           ; "USR (x)" jump
 OUTSUB  .EQU    WRKSPC+6H           ; "OUT p,n"
 OTPORT  .EQU    WRKSPC+7H           ; Port (p)
@@ -221,7 +223,7 @@ BRKRET: CALL    CLREG           ; Clear registers and stack
 
 BFREE:  .BYTE   " Bytes free",CR,LF,0,0
 
-SIGNON: .BYTE   "Z80 BASIC Ver 4.7b",CR,LF
+SIGNON: .BYTE   "Z80 BASIC Ver 4.7m",CR,LF
         .BYTE   "Copyright ",40,"C",41
         .BYTE   " 1978 by Microsoft",CR,LF,0,0
 
@@ -4317,7 +4319,7 @@ MONOUT:
 
 
 MONITR: 
-        JP      $0000           ; Restart (Normally Monitor Start)
+        JP      $1DC0           ; Restart (Normally Monitor Start)
 
 
 INITST: LD      A,0             ; Clear break flag
@@ -4337,5 +4339,7 @@ TSTBIT: PUSH    AF              ; Save bit mask
 OUTNCR: CALL    OUTC            ; Output character in A
         JP      PRNTCRLF        ; Output CRLF
 
+	.ORG 1DBFH
+	.BYTE	255
 .end
 

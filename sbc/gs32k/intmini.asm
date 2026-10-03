@@ -11,6 +11,8 @@
 ; If the above don't work, please perform an Internet search to see if I have
 ; updated the web page hosting service.
 ;
+; Phil_G: Small monitor added, just fits in an 8k rom above basic.  
+;
 ;==================================================================================
 
 ; Minimum 6850 ACIA interrupt driven serial I/O to run modified NASCOM Basic 4.7
@@ -24,12 +26,14 @@ SER_EMPTYSIZE   .EQU     5
 RTS_HIGH        .EQU     0D6H
 RTS_LOW         .EQU     096H
 
-serBuf          .EQU     $2000
+serBuf          .EQU     $8000
 serInPtr        .EQU     serBuf+SER_BUFSIZE
 serRdPtr        .EQU     serInPtr+2
 serBufUsed      .EQU     serRdPtr+2
 basicStarted    .EQU     serBufUsed+1
-TEMPSTACK       .EQU     $20ED ; Top of BASIC line input buffer so is "free ram" when BASIC resets
+TEMPSTACK       .EQU     $80ED	; Top of BASIC line input buffer so is "free ram" when BASIC resets
+BASIC           .EQU     $0150
+MONITOR         .EQU     $1DC0	; M/C monitor program just above BASIC
 
 CR              .EQU     0DH
 LF              .EQU     0AH
@@ -174,6 +178,8 @@ INIT:
 CORW:
                CALL      RXA
                AND       %11011111       ; lower to uppercase
+               CP        'M'
+               JP        Z,MONITOR
                CP        'C'
                JR        NZ, CHECKWARM
                RST       08H
@@ -183,7 +189,7 @@ CORW:
                RST       08H
 COLDSTART:     LD        A,'Y'           ; Set the BASIC STARTED flag
                LD        (basicStarted),A
-               JP        $0150           ; Start BASIC COLD
+               JP        BASIC           ; Start BASIC COLD
 CHECKWARM:
                CP        'W'
                JR        NZ, CORW
@@ -194,9 +200,11 @@ CHECKWARM:
                RST       08H
                JP        $0153           ; Start BASIC WARM
               
-SIGNON1:       .BYTE     CS
-               .BYTE     "Z80 SBC By Grant Searle",CR,LF,0
+SIGNON1:       .BYTE     CR,LF
+               .BYTE     "G Searle 32k Z80SBC",CR,LF,0
 SIGNON2:       .BYTE     CR,LF
-               .BYTE     "Cold or warm start (C or W)? ",0
+               .BYTE     "<C>old, <W>arm or <M>onitor? ",0
               
+               .ORG BASIC-$01
+               .BYTE     $FF
 .END
