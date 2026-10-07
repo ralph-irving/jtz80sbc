@@ -25,15 +25,15 @@
 ; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 	aseg
-	org	100h
+	org	9000h
 
 	jp	start
 
 ; machine state before test (needs to be at predictably constant address)
 msbt:	ds	14
 spbt:	ds	2
-msbthi	equ	msbt / 0100h
-msbtlo	equ	msbt & 0ffh
+msbthi	equ	high msbt
+msbtlo	equ	low msbt
 
 
 ; For the purposes of this test program, the machine state consists of:
@@ -87,7 +87,8 @@ msbtlo	equ	msbt & 0ffh
 ; hand using a binary search of the test space.
 
 
-start:	ld	hl,(6)
+start:
+	ld	hl,$fe00   ; put stack at top of 32k
 	ld	sp,hl
 	ld	de,msg1
 	ld	c,9
@@ -105,7 +106,7 @@ loop:	ld	a,(hl)		; end of list ?
 done:	ld	de,msg2
 	ld	c,9
 	call	bdos
-	jp	0		; warm boot
+	jp	$1dc0		; back to monitor
 
 tests:
 	dw	adc16
@@ -192,8 +193,8 @@ tstr	macro	insn1,insn2,insn3,insn4,memop,riy,rix,rhl,rde,rbc,flags,acc,rsp,?lab
 	endif
 	endm
 
-tmsg	macro	msg,?lab
-?lab:	db	'msg'
+tmsg	macro	m,?lab
+?lab:	db	m
 	if	$ ge ?lab+31
 	error	'message too long'
 	else
@@ -1210,7 +1211,24 @@ bdos	push	af
 	push	bc
 	push	de
 	push	hl
-	call	5
+bdos1:
+	ld	a,c
+	cp	9				; Is C register = 9, print $ terminated string in DE
+	jr	z,bdos9
+	cp	2				; Is C register = 2, print character in E
+	jr	nz,bdosexit
+bdos2:
+	ld	a,e
+	rst	$08				; Print character to serial console
+	jr	bdosexit
+bdos9:
+	ld	a,(de)			; Get character
+	cp	'$'				; Is it a $
+	jr	z,bdosexit		;   then RETurn on terminator
+	rst	$08				; Print character to serial console
+	inc	de				; next character
+	jr	bdos9			; continue until terminator found.
+bdosexit:
 	pop	hl
 	pop	de
 	pop	bc
@@ -1218,7 +1236,7 @@ bdos	push	af
 	ret
 
 msg1:	db	'Z80doc instruction exerciser',10,13,'$'
-msg2:	db	'Tests complete'
+msg2:	db	'Tests complete$'
 crlf:	db	10,13,'$'
 okmsg:	db	'  OK',10,13,'$'
 ermsg1:	db	'  ERROR **** crc expected:$'
